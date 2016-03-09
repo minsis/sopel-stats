@@ -40,10 +40,7 @@ def count_words(bot, trigger):
 @module.require_chanmsg()
 @module.commands("stats")
 def print_stats(bot, trigger):
-    """
-    Print the stats for a given nick for the channel it was called from.
-    If no nick is given it will display your own stats.
-    """
+    """Print the stats for a given nick for the channel it was called from. If no nick is given it will display your own stats."""
 
     if not trigger.group(2):
         _nick = trigger.nick
@@ -61,10 +58,7 @@ def print_stats(bot, trigger):
 @module.require_chanmsg()
 @module.commands("gstats")
 def print_gstats(bot, trigger):
-    """
-    Print the global stats for a nick. If no nick is given it will display
-    your own stats.
-    """
+    """Print the global stats for a nick. If no nick is given it will display your own stats."""
 
     count_words(bot, trigger)
 
