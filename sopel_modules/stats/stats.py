@@ -3,8 +3,8 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 from sopel import module
-from .statsdb import *
 
+import time
 
 def configure(config):
     pass
@@ -13,13 +13,10 @@ def configure(config):
 def setup(bot):
     pass
 
-def current_count(_nick, _count_key):
+def current_count(bot, _nick, _count_key):
     """ Returns the word count for a given nick"""
 
-    try:
-        word_count = int(bot.db.get_nick_value(_nick, _count_key))
-    except:
-        word_count = 0
+    word_count = int(bot.db.get_nick_value(_nick, _count_key))
 
     if word_count == None:
         word_count = 0
@@ -41,7 +38,7 @@ def print_stats(bot, trigger):
 
     _channel = str(trigger.sender)
     _count_key = "stats_wcount_" + _channel
-    word_count = current_count(_nick, _count_key)
+    word_count = current_count(bot, _nick, _count_key)
 
     bot.say("Stats for {} in {}".format(_nick, _channel))
     bot.say("Total Words: {}".format(word_count))
@@ -61,9 +58,9 @@ def print_gstats(bot, trigger):
 
     nick_id = str(bot.db.get_nick_id(_nick, False))
     if nick_id is not None:
-        sql_query_wcount = "SELECT SUM(CAST(value AS INTEGER)) FROM nick_value WHERE "
-                    "nick_id = " + nick_id + " AND "
-                    "key like 'stats_wcount_%'"
+        sql_query_wcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_value WHERE "
+                           "nick_id = " + nick_id + " AND "
+                           "key like 'stats_wcount_%'")
         word_count = bot.db.execute(sql_query_wcount).fetchone()[0]
 
         if word_count is None: word_count = 0
@@ -83,6 +80,6 @@ def count_words(bot, trigger):
     _message = str(trigger)
     _count_key = "stats_wcount_" + _channel
 
-    bot.db.set_nick_value(_nick, "stats_timestamp_" + _channel, time.time())
-    word_count = current_count(_nick, _count_key)
-    bot.db.set_nick_value(_nick, _count_key, word_count += len(trigger))
+    #bot.db.set_nick_value(_nick, "stats_timestamp_" + _channel, time.time())
+    word_count = current_count(bot, _nick, _count_key) + len(trigger)
+    bot.db.set_nick_value(_nick, _count_key, word_count)
