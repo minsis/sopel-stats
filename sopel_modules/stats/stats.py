@@ -16,12 +16,26 @@ def setup(bot):
 def current_count(bot, _nick, _count_key):
     """ Returns the word count for a given nick"""
 
-    word_count = int(bot.db.get_nick_value(_nick, _count_key))
-
-    if word_count == None:
+    try:
+        word_count = int(bot.db.get_nick_value(_nick, _count_key))
+    except:
         word_count = 0
 
     return word_count
+
+@module.require_chanmsg()
+@module.rule("(.*)")
+@module.priority("low")
+def count_words(bot, trigger):
+    """Counts the total words from a specific nick in a specific channel"""
+    _nick = str(trigger.nick)
+    _channel = str(trigger.sender)
+    _message = str(trigger)
+    _count_key = "stats_wcount_" + _channel
+
+    #bot.db.set_nick_value(_nick, "stats_timestamp_" + _channel, time.time())
+    word_count = current_count(bot, _nick, _count_key) + len(trigger)
+    bot.db.set_nick_value(_nick, _count_key, word_count)
 
 @module.require_chanmsg()
 @module.commands("stats")
@@ -33,8 +47,9 @@ def print_stats(bot, trigger):
 
     if not trigger.group(2):
         _nick = trigger.nick
+        count_words(bot, trigger)
     else:
-        _nick = str(trigger.group(2)[0])
+        _nick = str(trigger.group(2))
 
     _channel = str(trigger.sender)
     _count_key = "stats_wcount_" + _channel
@@ -51,14 +66,17 @@ def print_gstats(bot, trigger):
     your own stats.
     """
 
+    count_words(bot, trigger)
+
     if not trigger.group(2):
         _nick = trigger.nick
+        count_words(bot, trigger)
     else:
-        _nick = str(trigger.group(2)[0])
+        _nick = str(trigger.group(2))
 
     nick_id = str(bot.db.get_nick_id(_nick, False))
     if nick_id is not None:
-        sql_query_wcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_value WHERE "
+        sql_query_wcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_values WHERE "
                            "nick_id = " + nick_id + " AND "
                            "key like 'stats_wcount_%'")
         word_count = bot.db.execute(sql_query_wcount).fetchone()[0]
@@ -69,17 +87,3 @@ def print_gstats(bot, trigger):
 
     bot.say("Stats for {} globally".format(_nick))
     bot.say("Total Words: {}".format(word_count))
-
-@module.require_chanmsg()
-@module.rule("(.*)")
-@module.priority("low")
-def count_words(bot, trigger):
-    """Counts the total words from a specific nick in a specific channel"""
-    _nick = str(trigger.nick)
-    _channel = str(trigger.sender)
-    _message = str(trigger)
-    _count_key = "stats_wcount_" + _channel
-
-    #bot.db.set_nick_value(_nick, "stats_timestamp_" + _channel, time.time())
-    word_count = current_count(bot, _nick, _count_key) + len(trigger)
-    bot.db.set_nick_value(_nick, _count_key, word_count)
