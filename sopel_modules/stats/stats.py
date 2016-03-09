@@ -1,4 +1,12 @@
 # coding=utf-8
+"""
+Author: Dennis Whitney
+Handle: minsis
+Email: dwhitney@irunasroot.com
+
+Copyright © 2016, Dennis Whitney <dwhitney@irunasroot.com>
+Licensed under the Eiffel Forum License 2.
+"""
 
 from __future__ import unicode_literals, absolute_import, division, print_function
 
