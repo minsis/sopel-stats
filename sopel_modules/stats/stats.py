@@ -39,8 +39,8 @@ def get_global_word_count(bot, _nick):
     if nick_id is not None:
         sql_query_wcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_values WHERE "
                            "nick_id = ? AND "
-                           "key like 'stats_wcount_%'", (nick_id, ))
-        word_count = bot.db.execute(sql_query_wcount).fetchone()[0]
+                           "key like 'stats_wcount_%';")
+        word_count = bot.db.execute(sql_query_wcount, (nick_id,)).fetchone()[0]
 
         if word_count is None: word_count = 0
     else:
@@ -48,6 +48,18 @@ def get_global_word_count(bot, _nick):
 
     return word_count
 
+def get_nick(bot, trigger):
+    """Get the nick of stats to lookup"""
+
+    if not trigger.group(2) or trigger.group(2) == trigger.nick:
+        _nick = trigger.nick
+        count_words(bot, trigger)
+    else:
+        _nick = str(trigger.group(2))
+
+    return _nick
+
+@module.thread(False)
 @module.require_chanmsg()
 @module.rule("(.*)")
 @module.priority("low")
@@ -59,7 +71,6 @@ def count_words(bot, trigger):
     _message = str(trigger)
     _count_key = "stats_wcount_" + _channel
 
-    #bot.db.set_nick_value(_nick, "stats_timestamp_" + _channel, time.time())
     word_count = get_local_word_count(bot, _nick, _count_key) + len(trigger.split())
     bot.db.set_nick_value(_nick, _count_key, word_count)
 
@@ -68,12 +79,7 @@ def count_words(bot, trigger):
 def print_words(bot, trigger):
     """Print the word count for a given nick for the channel it was called from. If no nick is given it will display your own word count"""
 
-    if not trigger.group(2):
-        _nick = trigger.nick
-        count_words(bot, trigger)
-    else:
-        _nick = str(trigger.group(2))
-
+    _nick = get_nick(bot,trigger)
     _channel = str(trigger.sender)
     _count_key = "stats_wcount_" + _channel
     word_count = get_local_word_count(bot, _nick, _count_key)
@@ -85,29 +91,19 @@ def print_words(bot, trigger):
 def print_gwords(bot, trigger):
     """Print the global word count for a given nick. If no nick is given it will display your own word count"""
 
-    if not trigger.group(2):
-        _nick = trigger.nick
-        count_words(bot, trigger)
-    else:
-        _nick = str(trigger.group(2))
-
+    _nick = get_nick(bot,trigger)
     word_count = get_global_word_count(bot, _nick)
 
     bot.say("Total words for {} in all channels: {}".format(_nick, word_count))
+
 @module.require_chanmsg()
 @module.commands("stats")
 def print_stats(bot, trigger):
     """Print the stats for a given nick for the channel it was called from. If no nick is given it will display your own stats."""
 
-    if not trigger.group(2):
-        _nick = trigger.nick
-        count_words(bot, trigger)
-    else:
-        _nick = str(trigger.group(2))
-
+    _nick = get_nick(bot,trigger)
     _channel = str(trigger.sender)
     _count_key = "stats_wcount_" + _channel
-
     word_count = get_local_word_count(bot, _nick, _count_key)
 
     bot.say("Stats for {} in {}".format(_nick, _channel))
@@ -118,12 +114,7 @@ def print_stats(bot, trigger):
 def print_gstats(bot, trigger):
     """Print the global stats for a nick. If no nick is given it will display your own stats."""
 
-    if not trigger.group(2):
-        _nick = trigger.nick
-        count_words(bot, trigger)
-    else:
-        _nick = str(trigger.group(2))
-
+    _nick = get_nick(bot,trigger)
     word_count = get_global_word_count(bot, _nick)
 
     bot.say("Stats for {} globally".format(_nick))
