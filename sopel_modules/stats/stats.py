@@ -43,7 +43,8 @@ def print_stats(bot, trigger):
     _count_key = "stats_wcount_" + _channel
     word_count = current_count(_nick, _count_key)
 
-    bot.say("{}'s word count in this channel is: {}").format(_nick, word_count)
+    bot.say("Stats for {} in {}".format(_nick, _channel))
+    bot.say("Total Words: {}".format(word_count)
 
 @module.require_chanmsg()
 @module.rule("(.*)")
