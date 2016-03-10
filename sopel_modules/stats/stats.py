@@ -39,7 +39,7 @@ def get_global_word_count(bot, _nick):
     if nick_id is not None:
         sql_query_wcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_values WHERE "
                            "nick_id = ? AND "
-                           "key like 'stats_wcount_%';")
+                           "key LIKE 'stats_wcount_%';")
         word_count = bot.db.execute(sql_query_wcount, (nick_id,)).fetchone()[0]
 
         if word_count is None: word_count = 0
@@ -84,7 +84,7 @@ def print_words(bot, trigger):
     _count_key = "stats_wcount_" + _channel
     word_count = get_local_word_count(bot, _nick, _count_key)
 
-    bot.say("Total words for {} in {}: ".format(_nick, _channel, word_count))
+    bot.say("Total words for {} in {}: {}".format(_nick, _channel, word_count))
 
 @module.require_chanmsg()
 @module.commands("gwords")
@@ -119,3 +119,40 @@ def print_gstats(bot, trigger):
 
     bot.say("Stats for {} globally".format(_nick))
     bot.say("Total Words: {}".format(word_count))
+
+@module.require_chanmsg()
+@module.commands("t10words")
+def print_top_ten_words(bot, trigger):
+    """Print the top 10 word count for a the channel it was called from."""
+
+    _channel = str(trigger.sender)
+    _key = "stats_wcount_" + _channel
+
+    sql_query_top_ten = ("SELECT nick_id, CAST(value AS INTEGER) FROM nick_values WHERE "
+                       "key = ? "
+                       "ORDER BY value DESC LIMIT 10;")
+    top_ten_list = bot.db.execute(sql_query_top_ten, (_key, )).fetchall()
+
+    top_ten_output = "Top 10 {} results: ".format(_channel)
+    for one_row in top_ten_list:
+        top_ten_output += str(bot.db.get_nick_id(one_row[0])) + " - " + str(one_row[1]) + ", "
+
+    bot.say(top_ten_output)
+
+@module.require_chanmsg()
+@module.commands("gt10words")
+def print_gtop_ten_words(bot, trigger):
+    """Print the top 10 word count globally."""
+
+    sql_query_top_ten = ("SELECT nick_id, CAST(value AS INTEGER) FROM nick_values WHERE "
+                       "key LIKE 'stats_wcount_%' "
+                       "GROUP BY nick_id "
+                       "HAVING COUNT(nick_id) = 1 "
+                       "ORDER BY value DESC LIMIT 10;")
+    top_ten_list = bot.db.execute(sql_query_top_ten).fetchall()
+
+    top_ten_output = "Top 10 global results: "
+    for one_row in top_ten_list:
+        top_ten_output += str(bot.db.get_nick_id(one_row[0])) + " - " + str(one_row[1]) + ", "
+
+    bot.say(top_ten_output)
