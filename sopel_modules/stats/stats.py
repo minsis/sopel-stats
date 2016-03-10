@@ -67,7 +67,7 @@ def count_words(bot, trigger):
     """Counts the total words from a specific nick in a specific channel"""
 
     _nick = str(trigger.nick)
-    _channel = str(trigger.sender)
+    _channel = str(trigger.sender).lower()
     _message = str(trigger).encode("utf-8", "ignore")
     _count_key = "stats_wcount_" + _channel
 
@@ -80,7 +80,7 @@ def print_words(bot, trigger):
     """Print the word count for a given nick for the channel it was called from. If no nick is given it will display your own word count"""
 
     _nick = get_nick(bot,trigger)
-    _channel = str(trigger.sender)
+    _channel = str(trigger.sender).lower()
     _count_key = "stats_wcount_" + _channel
     word_count = get_local_word_count(bot, _nick, _count_key)
 
@@ -102,7 +102,7 @@ def print_stats(bot, trigger):
     """Print the stats for a given nick for the channel it was called from. If no nick is given it will display your own stats."""
 
     _nick = get_nick(bot,trigger)
-    _channel = str(trigger.sender)
+    _channel = str(trigger.sender).lower()
     _count_key = "stats_wcount_" + _channel
     word_count = get_local_word_count(bot, _nick, _count_key)
 
@@ -125,17 +125,20 @@ def print_gstats(bot, trigger):
 def print_top_ten_words(bot, trigger):
     """Print the top 10 word count for a the channel it was called from."""
 
-    _channel = str(trigger.sender)
+    _channel = str(trigger.sender).lower()
     _key = "stats_wcount_" + _channel
 
-    sql_query_top_ten = ("SELECT nick_id, CAST(value AS INTEGER) FROM nick_values WHERE "
-                       "key = ? "
-                       "ORDER BY value DESC LIMIT 10;")
+    sql_query_top_ten = ("SELECT canonical, value FROM nick_values AS nv "
+                        "JOIN nicknames AS ns on ns.nick_id = nv.nick_id "
+                        "WHERE key = ? "
+                        "ORDER BY value DESC LIMIT 10;")
     top_ten_list = bot.db.execute(sql_query_top_ten, (_key, )).fetchall()
 
-    top_ten_output = "Top 10 {} results: ".format(_channel)
+    top_ten_output = "Top 10 words in {} results: ".format(_channel)
+    cntr = 1
     for one_row in top_ten_list:
-        top_ten_output += str(bot.db.get_nick_id(one_row[0])) + " - " + str(one_row[1]) + ", "
+        top_ten_output += str(cntr) + "-" + str(one_row[0]) + ": " + str(one_row[1]) + "; "
+        cntr += 1
 
     bot.say(top_ten_output)
 
@@ -144,15 +147,17 @@ def print_top_ten_words(bot, trigger):
 def print_gtop_ten_words(bot, trigger):
     """Print the top 10 word count globally."""
 
-    sql_query_top_ten = ("SELECT nick_id, CAST(value AS INTEGER) FROM nick_values WHERE "
-                       "key LIKE 'stats_wcount_%' "
-                       "GROUP BY nick_id "
-                       "HAVING COUNT(nick_id) = 1 "
-                       "ORDER BY value DESC LIMIT 10;")
+    sql_query_top_ten = ("SELECT canonical, value FROM nick_values as nv "
+                        "JOIN nicknames AS ns on ns.nick_id = nv.nick_id "
+                        "WHERE key LIKE 'stats_wcount_%' "
+                        "GROUP BY nv.nick_id "
+                        "ORDER BY value DESC LIMIT 10;")
     top_ten_list = bot.db.execute(sql_query_top_ten).fetchall()
 
-    top_ten_output = "Top 10 global results: "
+    top_ten_output = "Top 10 words global results: "
+    cntr = 1
     for one_row in top_ten_list:
-        top_ten_output += str(bot.db.get_nick_id(one_row[0])) + " - " + str(one_row[1]) + ", "
+        top_ten_output += str(cntr) + "-" + str(one_row[0]) + ": " + str(one_row[1]) + "; "
+        cntr += 1
 
     bot.say(top_ten_output)
