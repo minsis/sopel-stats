@@ -68,7 +68,8 @@ def count_words(bot, trigger):
 
     _nick = str(trigger.nick)
     _channel = str(trigger.sender).lower()
-    _message = str(trigger).encode("utf-8", "ignore")
+    _message = trigger
+    _message.encode("utf8", "ignore")
     _count_key = "stats_wcount_" + _channel
 
     word_count = get_local_word_count(bot, _nick, _count_key) + len(trigger.split())
