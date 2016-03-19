@@ -1,6 +1,6 @@
 # sopel-stats
 
-Advanced stats tracking module
+Advanced stats tracking module for Sopel IRC bot.
 
 ### TODO
 

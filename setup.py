@@ -28,7 +28,7 @@ with open('dev-requirements.txt') as dev_requirements_file:
 setup(
     name='sopel_modules.stats',
     version='0.1',
-    description='Advanced stats tracking module',
+    description='Advanced stats tracking module for Sopel IRC bot',
     long_description=readme + '\n\n' + history,
     author='Dennis Whitney',
     author_email='dwhitney@irunasroot.com',
