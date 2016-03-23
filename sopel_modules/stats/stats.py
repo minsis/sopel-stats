@@ -59,6 +59,32 @@ def get_nick(bot, trigger):
 
     return _nick
 
+def get_local_letter_count(bot, _nick, _count_key):
+    """ Returns the letter count for a given nick for the specific channel"""
+
+    try:
+        letter_count = int(bot.db.get_nick_value(_nick, _count_key))
+    except:
+        letter_count = 0
+
+    return letter_count
+
+def get_global_letter_count(bot, _nick):
+    """Returns the global letter count for a given nick"""
+
+    nick_id = str(bot.db.get_nick_id(_nick, False))
+    if nick_id is not None:
+        sql_query_lcount = ("SELECT SUM(CAST(value AS INTEGER)) FROM nick_values WHERE "
+                           "nick_id = ? AND "
+                           "key LIKE 'stats_lcount_%';")
+        word_count = bot.db.execute(sql_query_lcount, (nick_id,)).fetchone()[0]
+
+        if word_count is None: word_count = 0
+    else:
+        word_count = 0
+
+    return word_count
+
 @module.thread(False)
 @module.require_chanmsg()
 @module.rule("(.*)")
@@ -70,10 +96,14 @@ def count_words(bot, trigger):
     _channel = str(trigger.sender).lower()
     _message = trigger
     _message.encode("utf8", "ignore")
-    _count_key = "stats_wcount_" + _channel
+    _word_count_key = "stats_wcount_" + _channel
+    _letter_count_key = "stats_lcount_" + _channel
 
-    word_count = get_local_word_count(bot, _nick, _count_key) + len(trigger.split())
-    bot.db.set_nick_value(_nick, _count_key, word_count)
+    word_count = get_local_word_count(bot, _nick, _word_count_key) + len(trigger.split())
+    letter_count = get_local_letter_count(bot, _nick, _letter_count_key) + len(trigger)
+
+    bot.db.set_nick_value(_nick, _word_count_key, word_count)
+    bot.db.set_nick_value(_nick, _letter_count_key, letter_count)
 
 @module.require_chanmsg()
 @module.commands("words")
@@ -162,3 +192,25 @@ def print_gtop_ten_words(bot, trigger):
         cntr += 1
 
     bot.say(top_ten_output)
+
+@module.require_chanmsg()
+@module.commands("letters")
+def print_letters(bot, trigger):
+    """Print the letter count for a given nick for the channel it was called from. If no nick is given it will display your own word count"""
+
+    _nick = get_nick(bot,trigger)
+    _channel = str(trigger.sender).lower()
+    _count_key = "stats_lcount_" + _channel
+    letter_count = get_local_letter_count(bot, _nick, _count_key)
+
+    bot.say("Total letters for {} in {}: {}".format(_nick, _channel, letter_count))
+
+@module.require_chanmsg()
+@module.commands("gletters")
+def print_gwords(bot, trigger):
+    """Print the global letter count for a given nick. If no nick is given it will display your own letter count"""
+
+    _nick = get_nick(bot,trigger)
+    letter_count = get_global_letter_count(bot, _nick)
+
+    bot.say("Total words for {} in all channels: {}".format(_nick, letter_count))
